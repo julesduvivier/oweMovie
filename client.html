@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>OweMovie</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/jquery.dataTables.css" />
+  <meta charset="UTF-8">
+</head>
+
+<body>
+
+
+  <div id="authForm">
+    <div id="form">
+      <img src="image/connexion.jpg">
+      <div id="formInput">
+        <input placeholder="LOGIN" type="text" id="email">
+        <input placeholder="PASSWORD" type="password" id="password">
+        <input type="submit" id="btnLoginClient" class="submit" value="CONNEXION">
+        <input type="submit" id="btnShowInscriptionClient" class="submit" value="INSCRIPTION">
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <div id="inscForm">
+    <div id="form">
+      <img src="image/connexion.jpg">
+      <div id="formInput">
+        <input placeholder="EMAIL" type="text" id="emailI">
+        <input placeholder="PASSWORD" type="password" id="passwordI">
+        <input placeholder="FIRSTNAME" type="text" id="firstname">        
+        <input placeholder="LASTNAME" type="text" id="lastname">
+        <input placeholder="BIRTHDATE" type="text" id="birthdate">
+        <input placeholder="PHONE" type="text" id="phone">
+        <input placeholder="ADDRESS" type="text" id="address">
+        <input placeholder="ZIPCODE" type="text" id="zipcode">
+        <input type="submit" id="btnInscriptionCLient" class="submit" value="INSCRIPTION">
+
+      </div>
+
+    </div>
+  </div>
+
+
+
+  <div id="contentForm">
+    <div class="header">
+    <input type="text" id="searchKey"/>
+    <button id="btnSearch">RECHERCHER</button>
+    <button id="btnCompte">MON COMPTE</button>
+  </div>
+
+    <div class="infoClient">
+      <h1><div id="wel"></div>       </h1>
+
+      </div>
+      <div id="listStore">
+        <h3>Liste des magasins : </h3>
+        <ul id="storeList"></ul>
+
+      </div>
+      <div class="leftArea">
+        <h1 class="categorie">FILMS</h1>
+        <ul id="mediaList"></ul>
+      </div>
+      <div class="mainArea">
+        <input type="text" id="mid"/>
+        <h1 class="categorie">INFORMATIONS</h1>
+        <p id="mtitle"></p>
+        <p id="mgenre"></p>
+        <p id="macteurs"></p>
+        <p id="mrealisateurs"></p>
+        <p id="mproducteurs"></p>
+        <p id="mnote"></p>
+        <p id="mds"></p>
+        <p id="msd"></p>
+        <p id="msc"></p>
+        <p id="msb"></p>
+
+        <button id="btnLouer">Louer ce film!</button>
+      </div>
+      <div class="rightArea">
+        <h1 class="categorie">DESCRIPTION</h1>
+        <img id="pic" width="100%"/>
+
+        <p id="mdesc"></p>
+
+
+
+      </div>
+
+      <div id="louerForm">
+        <h1 class="categorie">MODALITÉS</h1>
+        <p id="rentTitle"></p>
+        <p>Durant:</p>
+        <INPUT type= "radio" name="duree" value="1"> 1 semaine </br>
+          <INPUT type= "radio" name="duree" value="2"> 2 semaines </br>
+            <INPUT type= "radio" name="duree" value="3"> 3 semaines </br>
+              <br/>
+              <br/>
+              <p>Au format:</p>
+              <INPUT type= "radio" name="sup" id="sup1" value="1"> DVD </br>
+                <INPUT type= "radio" name="sup"  id="sup2" value="2"> Cassette </br>
+                  <INPUT type= "radio" name="sup"  id="sup3" value="3"> Bluray </br>
+                    <br/>
+                    <br/>
+                    <br/>
+                    <button id="btnLouerV">Louer!</button>
+                  </div>
+      <div id="infoCompte">
+      <h1 class="categorie"> HISTORIQUE DES LOCATIONS </h1>
+      <div id="histoLocation">
+          <table id="locationList"  class="display" cellspacing="0" width="100%">
+
+
+          </table>
+      </div>
+
+      </div>
+    </div>
+
+  </div>
+
+
+
+
+
+  <script src="js/jquery-1.7.1.min.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/jquery.dataTables.js"></script>
+
+
+</body>
+</html>

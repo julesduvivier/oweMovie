@@ -1,0 +1,275 @@
+<?php
+
+require 'Slim/Slim.php';
+
+$app = new Slim();
+
+
+$app->get('/medias', 'getMedias');
+$app->get('/medias/:id',	'getMedia');
+$app->get('/medias/search/:query', 'getMediaByName');
+$app->post('/medias', 'addMedia');
+$app->put('/medias/:id', 'updateMedia');
+$app->delete('/medias/:id',	'deleteMedia');
+
+$app->run();
+
+
+
+
+function getMedias() {
+	$sql = " SELECT c.id,c.title,c.synopsis,c.publication_date,c.rate,c.illustration,
+	GROUP_CONCAT(DISTINCT b.firstname, ' ' , b.lastname SEPARATOR ', ') actor,
+	GROUP_CONCAT(DISTINCT e.firstname, ' ' , e.lastname SEPARATOR ', ') realisator,
+	GROUP_CONCAT(DISTINCT g.firstname, ' ' , g.lastname SEPARATOR ', ') productor
+	FROM video_actor a
+	RIGHT JOIN actor b
+	ON a.actorid = b.id
+	RIGHT JOIN video c
+	ON a.videoid = c.id
+	LEFT JOIN video_realisator d
+	ON d.videoid = c.id
+	LEFT JOIN realisator e
+	ON e.id = d.realisatorid
+	LEFT JOIN video_productor f
+	ON f.videoid = c.id
+	LEFT JOIN productor g
+	ON g.id = f.productorid
+	GROUP BY c.title";
+
+	try {
+		$db = getConnection();
+		$stmt = $db->query($sql);
+		$medias = $stmt->fetchAll(PDO::FETCH_OBJ);
+		$db = null;
+		echo '{"medias": ' . json_encode(utf8_encode_array(objectToArray($medias))) . '}';
+	} catch(PDOException $e) {
+		echo '{"error":{"text":'. $e->getMessage() .'}}';
+	}
+}
+
+function getMedia($id) {
+	$sql = "SELECT c.id,c.title,c.synopsis,c.publication_date,c.rate,c.illustration,
+	GROUP_CONCAT(DISTINCT b.firstname, ' ' , b.lastname SEPARATOR ', ') actor,
+	GROUP_CONCAT(DISTINCT e.firstname, ' ' , e.lastname SEPARATOR ', ') realisator,
+	GROUP_CONCAT(DISTINCT g.firstname, ' ' , g.lastname SEPARATOR ', ') productor,
+	GROUP_CONCAT(DISTINCT j.name, ' : ', i.stockDvd, ' DVD ', i.stockCassette, ' Cassette ', i.stockBlury , ' Blu-ray 'SEPARATOR '\n') stock
+	FROM video_actor a
+	RIGHT JOIN actor b
+	ON a.actorid = b.id
+	RIGHT JOIN video c
+	ON a.videoid = c.id
+	LEFT JOIN video_realisator d
+	ON d.videoid = c.id
+	LEFT JOIN realisator e
+	ON e.id = d.realisatorid
+	LEFT JOIN video_productor f
+	ON f.videoid = c.id
+	LEFT JOIN productor g
+	ON g.id = f.productorid
+	LEFT JOIN video_support h
+	ON h.videoid = c.id
+	LEFT JOIN support i
+	ON i.id = h.supportid
+	LEFT JOIN store j
+	ON j.id = h.store_id
+	WHERE c.id = :id";
+	try {
+		$db = getConnection();
+		$stmt = $db->prepare($sql);
+		$stmt->bindParam("id", $id);
+		$stmt->execute();
+		$media = $stmt->fetchObject();
+		$db = null;
+		echo  json_encode(utf8_encode_array(objectToArray($media)));
+	} catch(PDOException $e) {
+		echo '{"error":{"text":'. $e->getMessage() .'}}';
+	}
+}
+
+
+function parseParam($param)
+{
+	$explode = explode(",",$param);
+	$params = array();
+	$i=0;
+	foreach($explode as $key)
+	{
+		$pos = strripos($key," ");
+		$firstname =  substr($key,0,$pos);
+		$lastname =  substr($key,$pos,$pos+strlen($key));
+		$params[$i]['firstname'] = $firstname;
+		$params[$i]['lastname'] = $lastname;
+		$i++;
+	}
+	return $params;
+}
+
+
+function addMedia() {
+	$request = Slim::getInstance()->request();
+	$media = json_decode($request->getBody());
+	$acteur = $media->actor;
+	$realisator = $media->realisator;
+	$lastidacteur = array();
+	$lastidrealisator = array();
+	$lastidvideo = 0;
+	$i=0;
+	$acteurs = array();
+	$acteurs = parseParam($acteur);
+	$realisators = array();
+	$realisators = parseParam($realisator);
+
+
+
+
+	$sql = "INSERT INTO video (title, synopsis, publication_date, rate) VALUES (:title,:synopsis,:releaseDate,:rate)";
+	$sql2 = "INSERT INTO actor (firstname,lastname) VALUES (:firstname,:lastname)";
+	$sql3 = "INSERT INTO video_actor (actorid,videoid) VALUES (:actorid,:videoid)";
+	try {
+
+		// REQUETE 1 : VIDEO
+		$db = getConnection();
+		$stmt = $db->prepare($sql);
+		$stmt->bindParam("title", $media->titre);
+		$stmt->bindParam("synopsis",$media->synopsis);
+		$stmt->bindParam("releaseDate",$media->publication_date);
+		$stmt->bindParam("rate", $media->rate);
+		$stmt->execute();
+		$lastidvideo = $db->lastInsertId();
+		$db = null;
+
+		// REQUETE 2 : ACTOR
+		$db2 = getConnection();
+		$stmt2 = $db2->prepare($sql2);
+		foreach($acteurs as $key)
+		{
+			$stmt2->bindParam("firstname", $key['firstname']);
+			$stmt2->bindParam("lastname",$key['lastname']);
+			$stmt2->execute();
+			$lastidacteur[$i] = $db2->lastInsertId();
+			$i++;
+		}
+		$db2=null;
+
+
+		// REQUETE 3: VIDEO_ACTOR
+		$db3 = getConnection();
+		$stmt3 = $db3->prepare($sql3);
+		foreach($lastidacteur as $key)
+		{
+			$stmt3->bindParam("actorid", $key);
+			$stmt3->bindParam("videoid",$lastidvideo);
+			$stmt3->execute();
+		}
+		$db3=null;
+
+
+		echo '{"success":{"text":"'. $acteurs[0]['firstname'] .'"}}';
+
+	} catch(PDOException $e) {
+		echo '{"error":{"text":"'. $e->getMessage() .'"}}';
+	}
+
+
+
+
+
+
+
+}
+
+
+
+function updateMedia($id) {
+	$request = Slim::getInstance()->request();
+	$media = json_decode($request->getBody());
+	$sql = "UPDATE video SET title=:title, synopsis=:synopsis, publication_date=:releaseDate, rate=:rate WHERE id=:id";
+	try {
+		$db = getConnection();
+		$stmt = $db->prepare($sql);
+		$stmt->bindParam("title", $media->titre);
+		$stmt->bindParam("synopsis",$media->synopsis);
+		$stmt->bindParam("releaseDate",$media->publication_date);
+		$stmt->bindParam("rate", $media->rate);
+		$stmt->bindParam("id", $id);
+		$stmt->execute();
+		$db = null;
+		echo json_encode($media);
+	} catch(PDOException $e) {
+		echo '{"error":{"text":'. $e->getMessage() .'}}';
+	}
+}
+
+function deleteMedia($id) {
+	$sql = "DELETE FROM video WHERE id=:id";
+	try {
+		$db = getConnection();
+		$stmt = $db->prepare($sql);
+		$stmt->bindParam("id", $id);
+		$stmt->execute();
+		$db = null;
+	} catch(PDOException $e) {
+		echo '{"error":{"text":'. $e->getMessage() .'}}';
+	}
+}
+
+function getMediaByName($query) {
+	$sql = "SELECT * FROM video WHERE UPPER(title) LIKE :query ";
+	try {
+		$db = getConnection();
+		$stmt = $db->prepare($sql);
+		$query = "%".$query."%";
+		$stmt->bindParam("query", $query);
+		$stmt->execute();
+		$medias = $stmt->fetchAll(PDO::FETCH_OBJ);
+		$db = null;
+		echo '{"medias": ' . json_encode(utf8_encode_array(objectToArray($medias))) . '}';
+	} catch(PDOException $e) {
+		echo '{"error":{"text":'. $e->getMessage() .'}}';
+	}
+}
+
+function getConnection() {
+	$dbhost="127.0.0.1";
+	$dbuser="root";
+	$dbpass="";
+	$dbname="owemovie3";
+	$dbh = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpass);
+	$dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+	return $dbh;
+}
+
+function utf8_encode_array($array)
+{
+	array_walk_recursive($array, function(&$item, $key){
+		if(!mb_detect_encoding($item, 'utf-8', true)){
+			$item = utf8_encode($item);
+		}
+	});
+
+	return $array;
+}
+
+
+function objectToArray($d) {
+	if (is_object($d)) {
+		// Gets the properties of the given object
+		// with get_object_vars function
+		$d = get_object_vars($d);
+	}
+
+	if (is_array($d)) {
+		/*
+		* Return array converted to object
+		* Using __FUNCTION__ (Magic constant)
+		* for recursive call
+		*/
+		return array_map(__FUNCTION__, $d);
+	}
+	else {
+		// Return array
+		return $d;
+	}
+}
+?>
